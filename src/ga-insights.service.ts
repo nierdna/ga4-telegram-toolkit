@@ -14,9 +14,8 @@ export class GAInsightsService {
     private ga4Service: GA4Service;
     private telegramService: TelegramService;
 
-    constructor() {
-        const ga4PropertyId = process.env.GA4_PROPERTY_ID || '489280622';
-        this.ga4Service = new GA4Service(ga4PropertyId, 'Apeoff.fun');
+    constructor(ga4PropertyId: string, ga4PropertyName: string, keyFilePath: string) {
+        this.ga4Service = new GA4Service(ga4PropertyId, ga4PropertyName, keyFilePath);
         this.telegramService = new TelegramService();
     }
 
@@ -235,7 +234,7 @@ export class GAInsightsService {
 
 // Kiểm tra service nếu file được chạy trực tiếp
 if (require.main === module) {
-    const gaInsights = new GAInsightsService();
+    const gaInsights = new GAInsightsService(process.env.GA4_PROPERTY_ID || '489280622', 'Apeoff.fun', '');
     gaInsights.sendDailyGAInsights().then(result => {
         console.log('Kết quả gửi báo cáo:', result ? 'thành công' : 'thất bại');
         process.exit(0);
