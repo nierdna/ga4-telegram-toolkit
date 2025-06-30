@@ -16,6 +16,10 @@ if [ $? -ne 0 ]; then
     npm login
 fi
 
+# Lấy phiên bản hiện tại
+CURRENT_VERSION=$(node -p "require('./package.json').version")
+echo -e "${YELLOW}Phiên bản hiện tại: ${CURRENT_VERSION}${NC}"
+
 # Kiểm tra và yêu cầu loại phiên bản
 echo -e "${YELLOW}Chọn loại phiên bản cần tăng:${NC}"
 echo "1) patch (1.0.0 -> 1.0.1) - Fix lỗi nhỏ"
@@ -49,7 +53,9 @@ fi
 
 # Tăng phiên bản
 echo -e "${YELLOW}Đang tăng phiên bản (${VERSION_TYPE})...${NC}"
-npm version $VERSION_TYPE
+npm version $VERSION_TYPE --no-git-tag-version
+NEW_VERSION=$(node -p "require('./package.json').version")
+echo -e "${GREEN}Phiên bản mới: ${NEW_VERSION}${NC}"
 
 # Kiểm tra nội dung sẽ publish
 echo -e "${YELLOW}Kiểm tra nội dung sẽ publish:${NC}"
@@ -67,16 +73,20 @@ echo -e "${YELLOW}Đang publish lên npm...${NC}"
 npm publish
 
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Publish thành công!${NC}"
+    echo -e "${GREEN}✅ Publish thành công phiên bản ${NEW_VERSION}!${NC}"
     
-    # Đề xuất tạo git tag
-    read -p "Tạo git tag cho phiên bản mới? (y/n): " CREATE_TAG
+    # Đề xuất commit và tạo git tag
+    read -p "Commit thay đổi và tạo git tag cho phiên bản mới? (y/n): " CREATE_TAG
     if [[ $CREATE_TAG == "y" || $CREATE_TAG == "Y" ]]; then
-        VERSION=$(node -p "require('./package.json').version")
-        git tag v$VERSION
-        git push origin v$VERSION
-        echo -e "${GREEN}✅ Đã tạo và push tag v${VERSION}${NC}"
+        git add package.json
+        git commit -m "chore: bump version to ${NEW_VERSION}"
+        git tag v$NEW_VERSION
+        git push && git push --tags
+        echo -e "${GREEN}✅ Đã commit, tạo và push tag v${NEW_VERSION}${NC}"
     fi
 else
     echo -e "${RED}❌ Publish thất bại!${NC}"
+    echo -e "${YELLOW}Đang khôi phục phiên bản cũ...${NC}"
+    # Sửa lại version cũ trong package.json
+    npm version $CURRENT_VERSION --no-git-tag-version --allow-same-version
 fi 
