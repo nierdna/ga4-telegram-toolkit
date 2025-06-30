@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "jest"
+    "test": "jest",
+    "publish:new": "bash ./scripts/publish.sh"
   },
   "keywords": [
     "ga4",
