@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+*.log
+.DS_Store
+.env 
+
+ga4-telegram-toolkit-*.tgz
+
+lynx-460617-4dcaad897518.json

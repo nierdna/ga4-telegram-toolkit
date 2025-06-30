@@ -1,0 +1,14 @@
+src/
+tests/
+.git/
+.gitignore
+.github/
+node_modules/
+coverage/
+.vscode/
+.idea/
+*.log
+tsconfig.json
+jest.config.js 
+
+lynx-460617-4dcaad897518.json
