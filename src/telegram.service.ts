@@ -94,7 +94,7 @@ export class TelegramService {
      * Test Telegram connection and proxy
      * @returns Promise<boolean> - Connection status
      */
-    async testConnection(): Promise<boolean> {
+    async testConnection(message?: string): Promise<boolean> {
         if (!this.botToken) {
             console.warn('⚠️ No Telegram bot token configured');
             return false;
@@ -105,7 +105,7 @@ export class TelegramService {
             const response = await this.axiosInstance.get(url);
 
             if (response.data.ok) {
-                console.log('✅ Telegram connection test successful');
+                console.log(`✅ Telegram connection test successful ${message ? `(${message})` : ''}`);
                 console.log(`🤖 Bot: ${response.data.result.first_name} (@${response.data.result.username})`);
                 return true;
             } else {
