@@ -58,7 +58,7 @@ interface ReportResult {
     message?: string;
 }
 
-// Interface cho Google Service Account Key
+// Interface cho Google Service Account Key đầy đủ (bao gồm cả field cố định)
 interface GoogleServiceAccountKey {
     type: string;
     project_id: string;
@@ -96,14 +96,25 @@ interface GA4RequestPayloadExtended extends GA4RequestPayload {
     dimensionFilter?: GA4Filter;
 }
 
+// Interface cho Google Service Account Key chỉ gồm các field động
+interface GoogleServiceAccountKeyInput {
+    project_id: string;
+    private_key_id: string;
+    private_key: string;
+    client_email: string;
+    client_id: string;
+    client_x509_cert_url: string;
+}
+
 export class GA4Service {
     private propertyId: string;
     private serviceAccountKey: GoogleServiceAccountKey | null = null;
-    private keyFilePath: string;
+    private keyFilePath: string | undefined;
     private debug: boolean;
     private name: string;
+    private serviceAccountObj?: GoogleServiceAccountKeyInput;
 
-    constructor(propertyId: string, name: string = 'GA4Service', keyFilePath?: string, debug: boolean = false) {
+    constructor(propertyId: string, name: string = 'GA4Service', keyFilePath?: string, debug: boolean = false, serviceAccountObj?: GoogleServiceAccountKeyInput) {
         if (!propertyId) {
             throw new Error('Google Analytics 4 Property ID is required');
         }
@@ -111,6 +122,7 @@ export class GA4Service {
         this.name = name;
         this.keyFilePath = keyFilePath || path.join(__dirname, 'lynx-460617-4dcaad897518.json');
         this.debug = debug;
+        this.serviceAccountObj = serviceAccountObj;
     }
 
     getName() {
@@ -118,19 +130,41 @@ export class GA4Service {
     }
 
     /**
-     * Lấy Service Account Key từ file JSON
+     * Lấy Service Account Key từ file JSON hoặc object truyền vào
      */
     private loadServiceAccountKey(): GoogleServiceAccountKey {
         try {
             if (!this.serviceAccountKey) {
-                const keyFileContent = fs.readFileSync(this.keyFilePath, 'utf-8');
-                this.serviceAccountKey = JSON.parse(keyFileContent) as GoogleServiceAccountKey;
-                logger.info('Successfully loaded Google service account key');
+                if (this.serviceAccountObj) {
+                    // Merge các field cố định
+                    this.serviceAccountKey = {
+                        type: "service_account",
+                        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+                        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+                        token_uri: "https://oauth2.googleapis.com/token",
+                        universe_domain: "googleapis.com",
+                        ...this.serviceAccountObj
+                    };
+                    logger.info('Successfully loaded Google service account key from object');
+                } else {
+                    const keyFileContent = fs.readFileSync(this.keyFilePath as string, 'utf-8');
+                    const rawKey = JSON.parse(keyFileContent);
+                    // Merge các field cố định (đề phòng thiếu field trong file)
+                    this.serviceAccountKey = {
+                        type: "service_account",
+                        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+                        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+                        token_uri: "https://oauth2.googleapis.com/token",
+                        universe_domain: "googleapis.com",
+                        ...rawKey
+                    };
+                    logger.info('Successfully loaded Google service account key from file');
+                }
             }
             return this.serviceAccountKey as GoogleServiceAccountKey;
         } catch (error) {
             logger.error('Error loading Google service account key:', error);
-            throw new Error('Failed to load Google service account key file');
+            throw new Error('Failed to load Google service account key file or object');
         }
     }
 
@@ -791,7 +825,14 @@ if (require.main === module) {
     async function testGA4Service() {
         try {
             // Sử dụng service key để xác thực, với chế độ debug = true
-            const ga4Service = new GA4Service(ga4PropertyId, 'GATestService', undefined, true);
+            const ga4Service = new GA4Service(ga4PropertyId, 'GATestService', undefined, true, {
+                project_id: 'lynx-460617',
+                private_key_id: '4dcaad897518966b5f51614cd5f96c8e41b4c6d1',
+                private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDBk8EdUGEiAmxT\nrg94cerNGDRAmMaND8DZhhqFRvg5UNEJ/hk9hrjIX6NOOJePHZOVbYls8mmpCvLb\np1vFwdBuPFozhmXQQZ9+kYYUmku7p91oK7QZB0WY3ny+OuM9S9+BdQ3z9tIpXUFp\nhub1/R4DDAPpg8pX0GdBFDPQH9PSTa5tHhEa0mZLjKb7ut81Vzz7E/YumCp0p5QD\n/mwG8tx+/XASjwbX9i/NV/6XIgA5W3QTrEr0xnEQ8/npah0+yNcvkq1qgDXgswjj\nLxzhyHaWCzqGqI1KWA/desDAm9PmynonC7dLejKLcLbbby+L3fodnEyde8PnxwUP\ncWCnumynAgMBAAECggEADEPo6gsURHvj0j+GomqRZpJgiTFE714uqXm6R3SSOMt6\nm0f64G+fWK7aoZOrYrmMhtzMZtdLQ5c6gRlvEq4vnzR6wKYE4Hev++yLktWd89N0\nj2upeyZ/TerW+5Sunk0m6cR5cFpUwaMziFSwYKi7lJTX0J11ni/JwxFdIRRLLxl5\nqD3yNpavZQE13jVgCPLPrIMk72HOhnTfK9ldX1h7V9FtqovswIl/MlUMCd5tixRb\nUahAGo4I5FdBmz3S+Oza92YYPZ4SbrZCiy/Yx5pFAOVr8bDs+y327nwMlDrjJBk3\ncYgE0GEkJ30FFUkt1TMaSgSxcDtBXbV9WDNwk22NkQKBgQDv7h6MZx5rtaTmFvvI\nHIBlgB8vEqyMNwP/dA85lAExM4qj8VWyKw5yLTElL7iVVDPsquVXu5Zy56V+7seT\npmApaUQYtYZCfhVpsIeYl59rek7a+qi6WFznT+Tn88pWw+zIefwlTZEYttHM5DmR\nO5sr0YJ/gMCHhkvXRJOUoVpX1wKBgQDOitv66bbgno+CijrWOMCcB7ajYal5S+Lq\n26svE30T/POlYnGRT2X0Mi9Fuj13gISAuC11Ecjq/vmXlag6FTLF3SzZllkak61L\nwiaMPuAa+RACwdu3sIsaeCHpLoETKVExJvHFsPl/Y+ofPi7Mfx5fIrREWOOz6+yc\nYU4DVS+3sQKBgQDhCnmAu5/e6wr1/Yy/j2wmx9t37Y4GHfwT+KnnGZlcqrlZOB1m\n9deg5B56gJ4jAk2JqGlgtsRQllG2EwUCykTb0q5adritWVGARmGIkH6o8plP71ef\nIQ5Sr69GmHWqmC5Zg4ErA+waQC/cfBw6yquql+JM8VikRSSRjvLVr9nrFQKBgCVO\nBU97eRF28hq01s2scHV+GynFUPPclf6vcGrPTU8X5/XeIv8I5TRHACzK56E28DfD\njEpRzQVMyk3rtPfQrlv4h8pBEpTvSWSei5HXJWkZxR+KXiH+XBGK0y0nvh503vpO\nu2pmfZnZtQaxl4hOCXFLdl3F5FKx8QmJtap6b2TxAoGAZcV3tpEsJ2cQpZD2ik2J\ns8BurOa1AFSldjFLGyJkh0w9kELQAhZVFH+9As9/ThgRyRIYV0xz4hbUjobcLgM0\nR7X+GS9FqBKn/5zJRTTpZ3jZEyY91qv3mVQKx6V0Ws1V+YOWjJEXGc1wkyOEA93B\nw9JSQgSDyZHPSC/WVEHA3mU=\n-----END PRIVATE KEY-----\n",
+                client_email: 'ga4-124@lynx-460617.iam.gserviceaccount.com',
+                client_id: '117680020391704302024',
+                client_x509_cert_url: 'https://www.googleapis.com/robot/v1/metadata/x509/ga4-124%40lynx-460617.iam.gserviceaccount.com'
+            });
             const yesterday = 'yesterday';
 
             console.log('Testing GA4 getUsersByCountry report...');

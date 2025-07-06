@@ -83,6 +83,33 @@ await gaInsightsService.testConnection();
 // SOCKS5_PROXY_URL=socks5://user:pass@host:port
 ```
 
+## Usage with Service Account Object
+
+You can now initialize `GA4Service` with a service account object (only dynamic fields required):
+
+```ts
+import { GA4Service } from './src/ga.service';
+
+const serviceAccountObj = {
+  project_id: 'lynx-460617',
+  private_key_id: 'xxxx',
+  private_key: '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n',
+  client_email: 'ga4-xxx@lynx-460617.iam.gserviceaccount.com',
+  client_id: 'xxxx',
+  client_x509_cert_url: 'https://www.googleapis.com/robot/v1/metadata/x509/ga4-xxx%40lynx-460617.iam.gserviceaccount.com'
+};
+
+const ga4Service = new GA4Service(
+  'YOUR_GA4_PROPERTY_ID',
+  'GA4Service',
+  undefined, // keyFilePath
+  false,     // debug
+  serviceAccountObj // pass the object here
+);
+```
+
+If you use a file path, the old way still works and the fixed fields will be auto-merged if missing.
+
 ## Cấu hình môi trường
 
 Tạo file `.env` với nội dung:
