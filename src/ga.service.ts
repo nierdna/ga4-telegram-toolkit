@@ -59,7 +59,7 @@ interface ReportResult {
 }
 
 // Interface cho Google Service Account Key đầy đủ (bao gồm cả field cố định)
-interface GoogleServiceAccountKey {
+export interface GoogleServiceAccountKey {
     type: string;
     project_id: string;
     private_key_id: string;
@@ -97,7 +97,7 @@ interface GA4RequestPayloadExtended extends GA4RequestPayload {
 }
 
 // Interface cho Google Service Account Key chỉ gồm các field động
-interface GoogleServiceAccountKeyInput {
+export interface GoogleServiceAccountKeyInput {
     project_id: string;
     private_key_id: string;
     private_key: string;

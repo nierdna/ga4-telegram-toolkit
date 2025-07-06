@@ -1,5 +1,5 @@
 import { logger } from "./utils/logger";
-import { GA4Service } from "./ga.service";
+import { GA4Service, GoogleServiceAccountKeyInput } from "./ga.service";
 import { TelegramService } from "./telegram.service";
 import * as dotenv from 'dotenv';
 
@@ -14,8 +14,8 @@ export class GAInsightsService {
     private ga4Service: GA4Service;
     private telegramService: TelegramService;
 
-    constructor(ga4PropertyId: string, ga4PropertyName: string, keyFilePath: string) {
-        this.ga4Service = new GA4Service(ga4PropertyId, ga4PropertyName, keyFilePath);
+    constructor(ga4PropertyId: string, ga4PropertyName: string, keyFilePath: string, serviceAccountObj?: GoogleServiceAccountKeyInput) {
+        this.ga4Service = new GA4Service(ga4PropertyId, ga4PropertyName, keyFilePath, false, serviceAccountObj);
         this.telegramService = new TelegramService();
     }
 
